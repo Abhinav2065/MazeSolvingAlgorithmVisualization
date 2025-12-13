@@ -1,6 +1,7 @@
 // Core OpenGL Headers
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <climits>
 #include <cstddef>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -10,11 +11,18 @@
 
 
 int main() {
+
+
+    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+
     // Initilize GLFW
     if (!glfwInit()){
         std::cerr << "Failed to initilize GLFW\n";
         return -1;
     }
+
+
+    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11); // Force to use X11 cuz its not working on wayland for me :(
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -29,8 +37,6 @@ int main() {
         return -1;
     }
     glfwMakeContextCurrent(window);
-
-
 
 
 
