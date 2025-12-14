@@ -31,7 +31,7 @@ int main() {
 
 
     // Create the Window
-    GLFWwindow* window = glfwCreateWindow(800, 600, "OpenGL Starter Project", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1200, 800, "OpenGL Starter Project", NULL, NULL);
     if (window == NULL) {
         std::cerr << "Failed to Create an GLFW Window" << std::endl;
         glfwTerminate();
