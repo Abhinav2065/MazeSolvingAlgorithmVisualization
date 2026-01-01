@@ -27,10 +27,16 @@ class Maze {
         std::vector<Cell> grid;
         std::stack<std::pair<int, int>> stack;
         std::mt19937 rng;
+        int currentX, currentY;
+        bool generating = false;
+        bool generateComplete = false;
+
 
         int index (int x, int y) const {
             return y * width + x;
         }
+
+        
 
 
     public: 
@@ -38,44 +44,132 @@ class Maze {
             grid.resize(width*height);
         }
 
+        void setupGeneration() {
+            rng.seed(std::time(0));
+            currentX = 0;
+            currentY = 0;
+            grid[index(currentX, currentY)].visited = true;
+            stack.push({currentX, currentY});
+            generating = true;
+        }
+
+        void step() {
+            if (stack.empty()) {
+                generating = false;
+                generateComplete = true;
+                return;
+            }
+
+
+            int x = currentX;
+            int y = currentY;
+
+            std::vector<int> neighours;
+
+
+            if (y < height - 1 && !grid[index(x, y + 1)].visited) neighours.push_back(0);
+            if (x < width - 1 && !grid[index(x + 1, y)].visited) neighours.push_back(1);
+            if (y > 0 && !grid[index(x, y - 1)].visited) neighours.push_back(2);
+            if (x > 0 && !grid[index(x - 1, y)].visited) neighours.push_back(3);
+
+            if (!neighours.empty()) {
+                
+                // Pick up an random neigbor
+                std::uniform_int_distribution<int> dist(0, neighours.size() -1);
+                int dir = neighours[dist(rng)];
+
+                stack.push({x,y});
+
+
+                // remove walls
+                if (dir == 0) { // Top
+                    grid[index(x, y)].walls[0] = false;
+                    currentY++;
+                    grid[index(currentX, currentY)].walls[2] = false; 
+                }
+
+                else if (dir == 1) { // Right
+                    grid[index(x, y)].walls[1] = false;
+                    currentX++;
+                    grid[index(currentX, currentY)].walls[3] = false; 
+                }
+                else if (dir == 2) { // Bottom
+                    grid[index(x, y)].walls[2] = false;
+                    currentY--;
+                    grid[index(currentX, currentY)].walls[0] = false; 
+                }
+                else if (dir == 3) { // Left
+                    grid[index(x, y)].walls[3] = false;
+                    currentX--;
+                    grid[index(currentX, currentY)].walls[1] = false; 
+                }
+                grid[index(currentX, currentY)].visited = true;
+            }
+
+            else {
+                auto next = stack.top();
+                stack.pop();
+                currentX = next.first;
+                currentY = next.second;
+            
+            }
+
+
+        }
+
         void render() {
-            float cellSize = 2.0f / std::max(width,height);
-            float offSetX = -1.0f + (2.0f - width*cellSize)/2.0f;
-            float offSetY = -1.0f + (2.0f - height*cellSize) / 2.0f;
-
-
-            // Render Cells
+            float cellSize = 2.0f / std::max(width, height);
+            float offSetX = -1.0f + (2.0f - width * cellSize) / 2.0f;
+            float offSetY = -1.0f + (2.0f - height * cellSize) / 2.0f;
 
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
                     Cell& cell = grid[index(x,y)];
-
-                    // Center Position of the Cell
-                    float cx = offSetX + x * cellSize + cellSize / 2;
-                    float cy = offSetY + y * cellSize + cellSize / 2;
-
-                    // Draw Box Colors
-                    glColor3f(0.8f, 0.8f, 0.8f);
-                    glBegin(GL_QUADS);
-                    glVertex2f(cx - cellSize/2, cy - cellSize/2);
-                    glVertex2f(cx + cellSize/2, cy - cellSize/2);
-                    glVertex2f(cx + cellSize/2, cy + cellSize/2);
-                    glVertex2f(cx - cellSize/2, cy + cellSize/2);
-                    glEnd();
+                    float x1 = offSetX + x * cellSize;
+                    float y1 = offSetY + y * cellSize;
+                    float x2 = x1 + cellSize;
+                    float y2 = y1 + cellSize;
 
 
-                    // Draw Box Borders
-                    glColor3f(0.0f, 0.0f, 0.0f);
-                    glLineWidth(2.0f);
-                    glBegin(GL_LINE_LOOP);
-                    glVertex2f(cx - cellSize/2, cy - cellSize/2);
-                    glVertex2f(cx + cellSize/2, cy - cellSize/2);
-                    glVertex2f(cx + cellSize/2, cy + cellSize/2);
-                    glVertex2f(cx - cellSize/2, cy + cellSize/2);
-                    glEnd();
+
+                    // Draw Visited Backgrounds
+                    if (cell.visited) {
+                        glColor3f(0.2f, 0.4f, 0.6f);
+                        glBegin(GL_QUADS);
+                        glVertex2f(x1, y1);
+                        glVertex2f(x2, y1);
+                        glVertex2f(x2, y2);
+                        glVertex2f(x1, y2);
+                        glEnd();
+                    }
+
+
+                // Render Walls
+                glColor3f(1.0f, 1.0f, 1.0f);
+                glBegin(GL_LINES);
+                if (cell.walls[0]) {
+                    glVertex2f(x1, y2);
+                    glVertex2f(x2, y2);
                 }
-            }
+                if (cell.walls[1]) {
+                    glVertex2f(x2, y1);
+                    glVertex2f(x2, y2);
+                }
+                if (cell.walls[2]) {
+                    glVertex2f(x1, y1);
+                    glVertex2f(x2, y1);
+                }
+                if (cell.walls[3]) {
+                    glVertex2f(x1, y1);
+                    glVertex2f(x1, y2);
+                }
+            
+                glEnd();
+
+
         }
+    }
+}
         
 };
 
@@ -123,6 +217,7 @@ GLuint createShaderProgram() {
 
 
 
+
 int main() {
 
 
@@ -165,6 +260,7 @@ int main() {
 
     Maze boxes(12,12);
 
+    boxes.setupGeneration();
 
     // Render Loop ( This keeps the window open)
 
@@ -177,6 +273,7 @@ int main() {
         glClearColor(0.3f, 0.2f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        boxes.step();
         boxes.render();
 
         glfwSwapBuffers(window);
