@@ -165,9 +165,33 @@ class Maze {
                 }
             
                 glEnd();
+            
 
+            // Make the starting Square (Green Square at the starting of the maze)
+            glColor3f(0.0f, 1.0f, 0.0f);
+
+            glBegin(GL_QUADS);
+            glVertex2f(-0.98f, -0.98f);
+            glVertex2f(-0.87f, -0.98f);
+            glVertex2f(-0.87f, -0.87);
+            glVertex2f(-0.98, -0.87);
+            glEnd();
+
+
+            // Make the ending Square
+
+            glColor3f(1.0f, 0.0f, 0.0f);
+
+            glBegin(GL_QUADS);
+            glVertex2f(0.98f, 0.98f);
+            glVertex2f(0.87f, 0.98f);
+            glVertex2f(0.87f, 0.87f);
+            glVertex2f(0.98f, 0.87f);
+            glEnd();
 
         }
+
+        
     }
 }
         
