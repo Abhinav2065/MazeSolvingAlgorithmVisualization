@@ -1,3 +1,4 @@
+#include <exception>
 #include <queue>
 #include <limits>
 #include <functional>
@@ -86,6 +87,73 @@ class Maze {
             state = GENERATING;
         }
 
+
+        void step() {
+            if (state == GENERATING) {
+                stepGeneration();
+            }
+            else if (state == SOLVING) {
+                stepDijkstra();
+            }
+        }
+        
+        
+        void stepDijkstra() {
+            if (pq.empty()) {
+                state = SOLVED;
+                return;
+            }
+
+            int currentCost = pq.top().first;
+            int currentIdx = pq.top().second;
+            pq.pop();
+            
+
+            if (currentCost > dist[currentIdx]) return;
+
+            solveVisited[currentIdx] = true;
+
+            if (currentIdx == index(width - 1, height -1)) {
+                reconstructuredPath(currentIdx);  
+                state = SOLVED;
+                return;
+            }
+
+
+            int cx = currentIdx % width;
+            int cy = currentIdx / width;
+
+            int dx[] = {0,1,0,01};
+            int dy[] = {1,0,-1,0};
+
+            for (int i = 0; i < 4; i++) {
+                if (grid[currentIdx].walls[i]) continue;
+
+                int nx = cx + dx[i];
+                int ny = cy + dy[i];
+                int nextIdx = index(nx, ny);
+
+                if (nextIdx != -1) {
+                    int newDist = dist[currentIdx] + 1;
+
+                    if (newDist < dist[nextIdx]) {
+                        dist[nextIdx] = newDist;
+                        parentMap[nextIdx] = currentIdx;
+                        pq.push({newDist, nextIdx});
+                    }
+                }
+            }
+        }
+
+        void reconstructuredPath(int endIdx) {
+            int curr = endIdx;
+            while (curr != -1) {
+                finalPath.push_back(curr);
+                curr = parentMap[curr];
+            }
+        }
+
+
         void stepGeneration() {
             if (stack.empty()) {
                 state = IDLE;
@@ -147,6 +215,27 @@ class Maze {
             }
 
 
+        }
+
+        void setupDijkstra() {
+            if (state == GENERATING) return;
+
+            // Rest the Data Structure
+            while (!pq.empty()) pq.pop();
+            finalPath.clear();
+
+            int totalCells = width*height;
+            dist.assign(totalCells, std::numeric_limits<int>::max()); // Infinite Distance
+            parentMap.assign(totalCells, -1);
+            solveVisited.assign(totalCells, false);
+
+
+            // Start at (0,0)
+            int startInx = index(0,0);
+            dist[startInx] = 0;
+            pq.push({0, startInx});
+
+            state = SOLVING;
         }
 
         void render() {
@@ -227,10 +316,8 @@ class Maze {
     }
         }
 
-        void reset() {
-           
-            
-            setupGeneration();
+        void reset() {  
+            step();
         }
         
 };
