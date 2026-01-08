@@ -1,4 +1,6 @@
-// Core OpenGL Headers
+#include <queue>
+#include <limits>
+#include <functional>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <algorithm>
@@ -7,7 +9,6 @@
 #include <cstddef>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -21,18 +22,43 @@ struct Cell {
     bool walls[4] = {true, true, true, true}; // For each direction in a 2d space.
 };
 
+
+enum MazeState {
+    GENERATING,
+    IDLE,
+    SOLVING,
+    SOLVED
+};
+
 class Maze {
     private:
         int width, height;
         std::vector<Cell> grid;
+
+        // Variables for Genrating using DFS
         std::stack<std::pair<int, int>> stack;
         std::mt19937 rng;
         int currentX, currentY;
-        bool generating = false;
-        bool generateComplete = false;
+
+        // Variable for Dijkstra
+
+        using Node = std::pair<int, int>;
+
+        std::priority_queue<Node, std::vector<Node>, std::greater<Node>> pq;
+
+        std::vector<int> dist;
+        std::vector<int> parentMap;
+        std::vector<bool> solveVisited;
+        std::vector<int> finalPath;
+
+        MazeState state = IDLE;
+
 
 
         int index (int x, int y) const {
+            if (x < 0 || x >= width || y < 0 || y >= height) {
+                return -1;
+            }
             return y * width + x;
         }
 
@@ -42,21 +68,27 @@ class Maze {
     public: 
         Maze(int w, int h): width(w), height(h) {
             grid.resize(width*height);
+            rng.seed(std::time(0));
         }
 
         void setupGeneration() {
-            rng.seed(std::time(0));
+            grid.assign(width * height, Cell());
+            
+            while (!stack.empty()) stack.pop();
+
             currentX = 0;
             currentY = 0;
             grid[index(currentX, currentY)].visited = true;
             stack.push({currentX, currentY});
-            generating = true;
+
+            finalPath.clear();
+
+            state = GENERATING;
         }
 
-        void step() {
+        void stepGeneration() {
             if (stack.empty()) {
-                generating = false;
-                generateComplete = true;
+                state = IDLE;
                 return;
             }
 
@@ -193,7 +225,13 @@ class Maze {
 
         
     }
-}
+        }
+
+        void reset() {
+           
+            
+            setupGeneration();
+        }
         
 };
 
@@ -284,6 +322,8 @@ int main() {
 
     Maze boxes(12,12);
 
+    bool rKeyPressed = false;
+
     boxes.setupGeneration();
 
     // Render Loop ( This keeps the window open)
@@ -292,12 +332,22 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
             glfwSetWindowShouldClose(window, true);
         }
+        
+        if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+            if (!rKeyPressed) {
+                boxes.reset();
+                rKeyPressed = true;
+            }
 
+            else {
+                rKeyPressed = false;
+            }
+        }
 
         glClearColor(0.3f, 0.2f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        boxes.step();
+        boxes.stepGeneration();
         boxes.render();
 
         glfwSwapBuffers(window);
