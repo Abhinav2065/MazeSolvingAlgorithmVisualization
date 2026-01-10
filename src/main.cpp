@@ -312,11 +312,15 @@ class Maze {
 
             glColor3f(1.0f, 0.0f, 0.0f);
 
+
+            float ex = offSetX + (width - 1) * cellSize;
+            float ey = offSetY + (height - 1) * cellSize;
+
             glBegin(GL_QUADS);
-            glVertex2f(0.98f, 0.98f);
-            glVertex2f(0.87f, 0.98f);
-            glVertex2f(0.87f, 0.87f);
-            glVertex2f(0.98f, 0.87f);
+            glVertex2f(ex + 0.02f, ey + 0.02f);
+            glVertex2f( ex + cellSize - 0.02f, ey + 0.02f);
+            glVertex2f(ex + cellSize - 0.02f, ey + cellSize - 0.02f);
+            glVertex2f(ex + 0.02f, ey + cellSize - 0.02f);
             glEnd();
 
 
