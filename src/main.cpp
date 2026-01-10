@@ -123,7 +123,7 @@ class Maze {
             int cx = currentIdx % width;
             int cy = currentIdx / width;
 
-            int dx[] = {0,1,0,01};
+            int dx[] = {0,1,0,-1};
             int dy[] = {1,0,-1,0};
 
             for (int i = 0; i < 4; i++) {
@@ -245,7 +245,10 @@ class Maze {
 
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    Cell& cell = grid[index(x,y)];
+                    int idx = index(x,y);
+                    Cell& cell = grid[idx];
+
+
                     float x1 = offSetX + x * cellSize;
                     float y1 = offSetY + y * cellSize;
                     float x2 = x1 + cellSize;
@@ -255,7 +258,12 @@ class Maze {
 
                     // Draw Visited Backgrounds
                     if (cell.visited) {
-                        glColor3f(0.2f, 0.4f, 0.6f);
+                        glColor3f(0.2f, 0.6f, 0.2f);
+
+                        if (state >= SOLVING && solveVisited[idx]) {
+                            glColor3f(0.0f, 0.4f, 0.8f);
+                        }
+
                         glBegin(GL_QUADS);
                         glVertex2f(x1, y1);
                         glVertex2f(x2, y1);
@@ -289,13 +297,14 @@ class Maze {
             
 
             // Make the starting Square (Green Square at the starting of the maze)
+            float sx = offSetX;
+            float sy = offSetY;
             glColor3f(0.0f, 1.0f, 0.0f);
-
             glBegin(GL_QUADS);
-            glVertex2f(-0.98f, -0.98f);
-            glVertex2f(-0.87f, -0.98f);
-            glVertex2f(-0.87f, -0.87);
-            glVertex2f(-0.98, -0.87);
+            glVertex2f(sx + 0.02f, sy + 0.02f);
+            glVertex2f(sx + cellSize - 0.02f, sy + 0.02f);
+            glVertex2f(sx + cellSize -0.02f, sy + cellSize - 0.02f);
+            glVertex2f(sx + 0.02f, sy + cellSize - 0.02f);
             glEnd();
 
 
@@ -310,14 +319,43 @@ class Maze {
             glVertex2f(0.98f, 0.87f);
             glEnd();
 
+
+
+            // Solution Rendering
+            if (state == SOLVED && !finalPath.empty()) {
+                glColor3f(1.0f, 0.8f, 0.0f);
+                glLineWidth(4.0f);
+
+                glBegin(GL_LINE_STRIP);
+                for (int idx: finalPath) {
+                    int px = idx % width;
+                    int py = idx / width;
+
+
+                    float cx = offSetX + px * cellSize + (cellSize / 2.0f);
+                    float cy = offSetY + py * cellSize + (cellSize / 2.0f);
+
+                    glVertex2f(cx, cy);
+                }
+                glEnd();
+
+                glLineWidth(1.0f);
+            }
+
+
         }
 
         
     }
         }
 
+
+        bool isGenerationDone() {
+            return state == IDLE;
+        }
+
         void reset() {  
-            step();
+            setupGeneration();
         }
         
 };
@@ -410,6 +448,8 @@ int main() {
     Maze boxes(12,12);
 
     bool rKeyPressed = false;
+    bool dKeyPressed = false;
+
 
     boxes.setupGeneration();
 
@@ -431,10 +471,23 @@ int main() {
             }
         }
 
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            if (!dKeyPressed) {
+                if (boxes.isGenerationDone()) {
+                    boxes.setupDijkstra();
+                }
+                dKeyPressed = true;
+            }
+            
+            else {
+                dKeyPressed = false;
+            }
+        }
+
         glClearColor(0.3f, 0.2f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        boxes.stepGeneration();
+        boxes.step();
         boxes.render();
 
         glfwSwapBuffers(window);
